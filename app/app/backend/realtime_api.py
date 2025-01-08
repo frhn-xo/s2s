@@ -1,118 +1,91 @@
-import asyncio
-import websocket
-import os
 import json
+import base64
+import websocket
+import pyaudio
+import os
 from dotenv import load_dotenv
-from base64 import b64decode
-import simpleaudio as sa
 
 load_dotenv()
 
-AZURE_WEBSOCKET_ENDPOINT = os.getenv("AZURE_WEBSOCKET_ENDPOINT")
-AZURE_KEY = os.getenv("AZURE_KEY")
+AUDIO_SAMPLE_RATE = 24000
 
-url = AZURE_WEBSOCKET_ENDPOINT
-headers = ["api-key: " + AZURE_KEY]
+url = os.getenv("AZURE_WEBSOCKET_ENDPOINT")
+headers = {"api-key": os.getenv("AZURE_KEY")}
 
-print(f"WebSocket Endpoint: {AZURE_WEBSOCKET_ENDPOINT}")
-print(f"API Key Provided: {'Yes' if AZURE_KEY else 'No'}")
+p = pyaudio.PyAudio()
 
-# Global variables for managing WebSocket communication
-ws = None
-response_text = ""
+stream = p.open(format=pyaudio.paInt16, channels=1, rate=AUDIO_SAMPLE_RATE, output=True)
 
 
-def on_open(ws):
-    print("Connected to server.")
+def send_text_message(ws, text_message):
+    print("Sending text message:", text_message)
+    ws.send(
+        json.dumps(
+            {
+                "type": "response.create",
+                "response": {
+                    "modalities": ["text", "audio"],
+                    "instructions": text_message,
+                },
+            }
+        )
+    )
 
 
 def on_message(ws, message):
-    global response_text
-    data = json.loads(message)
+    message_data = json.loads(message)
 
-    if data["type"] == "response.text":
-        # Handle text response
-        response_text = data["response"]["text"]
-        print("Text Response:", response_text)
-
-    elif data["type"] == "response.audio.delta":
-        # Handle streaming audio response
-        audio_chunk = b64decode(data["delta"])
-        play_audio_chunk(audio_chunk)  # Stream audio playback
-
-    elif data["type"] == "response.audio.done":
-        print("Audio streaming complete.")
+    if message_data.get("type") == "response.text.delta":
+        print(message_data["delta"])
+    elif message_data.get("type") == "response.audio.delta":
+        audio_data = base64.b64decode(message_data["delta"])
+        play_audio(audio_data)
+    elif message_data.get("type") == "response.text.done":
+        print("Text response done")
+    else:
+        print(f"Received message of unknown type: {message_data}")
 
 
 def on_error(ws, error):
-    print("WebSocket error:", error)
+    print("Error:", error)
 
 
 def on_close(ws, close_status_code, close_msg):
-    print(f"WebSocket closed. Code: {close_status_code}, Message: {close_msg}")
+    print("Connection closed")
 
 
-def play_audio_chunk(audio_bytes):
-    """Play a chunk of PCM audio data on the laptop."""
-    try:
-        # Play the raw PCM16 audio data in real-time
-        playback = sa.play_buffer(
-            audio_bytes, num_channels=1, bytes_per_sample=2, sample_rate=16000
+def on_open(ws):
+    print("Connection opened. Sending initial data...")
+
+    ws.send(
+        json.dumps(
+            {
+                "type": "session.update",
+                "session": {
+                    "modalities": ["text", "audio"],
+                },
+            }
         )
-        playback.wait_done()  # Wait for the chunk to finish
-    except Exception as e:
-        print("Error playing audio chunk:", e)
+    )
+
+    send_text_message(ws, "Tell me about AI.")
 
 
-def ask(question):
-    """Send a question to the model and retrieve text and audio responses."""
-    global ws
-    if not ws:
-        print("WebSocket is not connected.")
-        return
-
-    # Send user question
-    event = {
-        "type": "conversation.item.create",
-        "item": {
-            "type": "message",
-            "role": "user",
-            "content": [{"type": "input_text", "text": question}],
-        },
-    }
-    ws.send(json.dumps(event))
-
-    # Request response from the model
-    event = {
-        "type": "response.create",
-        "response": {
-            "modalities": ["text", "audio"],
-            "instructions": "Respond with both text and audio.",
-        },
-    }
-    ws.send(json.dumps(event))
+def play_audio(audio_data):
+    stream.write(audio_data)
 
 
-websocket.enableTrace(False)
-
-ws = websocket.WebSocketApp(
-    url,
-    header=headers,
-    on_open=on_open,
-    on_message=on_message,
-    on_error=on_error,
-    on_close=on_close,
-)
-
-
-# Run the WebSocket in a separate thread
-async def run_ws():
+def start_websocket():
+    ws = websocket.WebSocketApp(
+        url,
+        header=headers,
+        on_open=on_open,
+        on_message=on_message,
+        on_error=on_error,
+        on_close=on_close,
+    )
     ws.run_forever()
 
 
-# Example usage
 if __name__ == "__main__":
-    asyncio.run(run_ws())
-    while True:
-        question = input("What is capital of France? ")
-        ask(question)
+    start_websocket()
