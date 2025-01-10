@@ -4,8 +4,6 @@ import reflex as rx
 
 from rxconfig import config
 
-from app.components import mic
-
 
 class State(rx.State):
     """The app state."""
@@ -13,14 +11,29 @@ class State(rx.State):
     ...
 
 
+class Mic(rx.Component):
+    library = "/public/components/main"
+    tag = "App"
+
+    def add_imports(self):
+        return {"react-use-websocket": ["useWebSocket"]}
+
+
 def index() -> rx.Component:
     return rx.container(
-        rx.color_mode.button(position="top-right"),
         rx.vstack(
-            rx.heading("S2S", size="9"),
-            mic(),
-            spacing="5",
-            min_height="85vh",
+            rx.flex(
+                rx.heading("S2S", size="8"),
+                rx.color_mode.button(),
+                width="100%",
+                justify="between",
+            ),
+            rx.center(
+                Mic.create(),
+                width="100%",
+            ),
+            min_height="100vh",
+            spacing="7",
         ),
     )
 

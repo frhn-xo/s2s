@@ -1,2 +1,2 @@
-bash clean_cache.py
+bash clean_cache.sh
 bash ./entrypoint.sh
