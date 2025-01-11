@@ -14,6 +14,10 @@ class S2S(NoSSRComponent):
     library = "/public/s2s"
     tag = "S2S"
 
+    wsEndpoint: rx.Var[str]
+    startText: rx.Var[str]
+    stopText: rx.Var[str]
+
     def add_imports(self):
         return {"react-use-websocket": ["useWebSocket"]}
 
@@ -28,7 +32,11 @@ def index() -> rx.Component:
                 justify="between",
             ),
             rx.center(
-                S2S.create(),
+                S2S.create(
+                    wsEndpoint="ws://localhost:8765/realtime",
+                    startText="Start",
+                    stopText="Stop",
+                ),
                 width="100%",
             ),
             min_height="100vh",

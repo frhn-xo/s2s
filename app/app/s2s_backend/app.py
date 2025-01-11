@@ -72,14 +72,6 @@ async def create_app():
     rtmt.attach_to_app(app, "/realtime")
 
     current_directory = Path(__file__).parent
-    app.add_routes(
-        [
-            web.get(
-                "/", lambda _: web.FileResponse(current_directory / "static/index.html")
-            )
-        ]
-    )
-    app.router.add_static("/", path=current_directory / "static", name="static")
 
     return app
 

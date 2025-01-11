@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, Children } from 'react';
 import useWebSocket from 'react-use-websocket';
 
 const SAMPLE_RATE = 24000;
@@ -235,6 +235,7 @@ function useAudioPlayer() {
 }
 
 function useRealTime({
+  wsEndpoint,
   enableInputAudioTranscription,
   onWebSocketOpen,
   onWebSocketClose,
@@ -248,8 +249,6 @@ function useRealTime({
   onReceivedInputAudioTranscriptionCompleted,
   onReceivedError,
 }) {
-  const wsEndpoint = 'ws://localhost:8765/realtime';
-
   const { sendJsonMessage } = useWebSocket(wsEndpoint, {
     onOpen: () => onWebSocketOpen?.(),
     onClose: () => onWebSocketClose?.(),
@@ -333,10 +332,15 @@ function useRealTime({
   return { startSession, addUserAudio, inputAudioBufferClear };
 }
 
-export function S2S() {
+export function S2S(props) {
   const [isRecording, setIsRecording] = useState(false);
+  console.log(props, 'props');
+  const wsEndpoint = props.wsEndpoint;
+  const startText = props.startText;
+  const stopText = props.stopText;
 
   const { startSession, addUserAudio, inputAudioBufferClear } = useRealTime({
+    wsEndpoint,
     onWebSocketOpen: () => console.log('WebSocket connection opened'),
     onWebSocketClose: () => console.log('WebSocket connection closed'),
     onWebSocketError: (event) => console.error('WebSocket error:', event),
@@ -399,7 +403,7 @@ export function S2S() {
           : '#6b46c1';
       }}
     >
-      {isRecording ? <>stop conversation</> : <>start conversation</>}
+      {isRecording ? <>{stopText}</> : <>{startText}</>}
     </button>
   );
 }
@@ -408,7 +412,8 @@ export function S2S() {
 
 // import React from 'react';
 
-// export function S2S() {
+// export function S2S(wsEndpoint) {
+//   console.log(wsEndpoint);
 //   return (
 //     <div>
 //       <h1>Speech-to-Speech</h1>
