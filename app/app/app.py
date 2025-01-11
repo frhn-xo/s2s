@@ -1,8 +1,7 @@
-"""Welcome to Reflex! This file outlines the steps to create a basic app."""
-
 import reflex as rx
 
 from rxconfig import config
+from reflex.components.component import NoSSRComponent
 
 
 class State(rx.State):
@@ -11,9 +10,9 @@ class State(rx.State):
     ...
 
 
-class Mic(rx.Component):
-    library = "/public/components/main"
-    tag = "App"
+class S2S(NoSSRComponent):
+    library = "/public/s2s"
+    tag = "S2S"
 
     def add_imports(self):
         return {"react-use-websocket": ["useWebSocket"]}
@@ -29,7 +28,7 @@ def index() -> rx.Component:
                 justify="between",
             ),
             rx.center(
-                Mic.create(),
+                S2S.create(),
                 width="100%",
             ),
             min_height="100vh",
