@@ -43,7 +43,6 @@ async def create_app():
         credentials=llm_credential,
         endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
         deployment=os.environ["AZURE_OPENAI_REALTIME_DEPLOYMENT"],
-        voice_choice=os.environ.get("AZURE_OPENAI_REALTIME_VOICE_CHOICE") or "alloy",
     )
     rtmt.system_message = (
         "You are an English Speaking assistant. Only answer questions based on information you searched in the knowledge base, accessible with the 'search' tool. "

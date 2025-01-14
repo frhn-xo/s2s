@@ -260,19 +260,7 @@ function useRealTime({
   const startSession = () => {
     const command = {
       type: 'session.update',
-      session: {
-        turn_detection: {
-          type: 'server_vad',
-        },
-      },
     };
-
-    if (enableInputAudioTranscription) {
-      command.session.input_audio_transcription = {
-        model: 'whisper-1',
-      };
-    }
-
     sendJsonMessage(command);
   };
 
@@ -334,7 +322,6 @@ function useRealTime({
 
 export function S2S(props) {
   const [isRecording, setIsRecording] = useState(false);
-  console.log(props, 'props');
   const wsEndpoint = props.wsEndpoint;
   const startText = props.startText;
   const stopText = props.stopText;
@@ -366,7 +353,7 @@ export function S2S(props) {
 
   const onToggleListening = async () => {
     if (!isRecording) {
-      startSession();
+      await startSession();
       await startAudioRecording();
       resetAudioPlayer();
 
